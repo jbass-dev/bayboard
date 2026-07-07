@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AssignDialog from "../components/AssignDialog";
 import BoardColumn from "../components/BoardColumn";
+import CompleteDialog from "../components/CompleteDialog";
 import NewTicketForm from "../components/NewTicketForm";
 import TicketCard from "../components/TicketCard";
 import {
   assignTicketToBay,
+  completeTicket,
   returnTicketToWaiting,
   seedDefaults,
 } from "../lib/board-actions";
@@ -16,7 +18,7 @@ import { bayTickets, sortBays, waitingTickets } from "../lib/board-logic";
 import { auth } from "../lib/firebase";
 import { useAuth } from "../lib/useAuth";
 import { useCollection } from "../lib/useCollection";
-import type { Bay, Technician, Ticket } from "../types";
+import type { Bay, InventoryItem, Technician, Ticket } from "../types";
 
 interface AssignTarget {
   ticket: Ticket;
@@ -30,8 +32,10 @@ export default function BoardPage() {
   const tickets = useCollection<Ticket>("tickets");
   const bays = useCollection<Bay>("bays");
   const technicians = useCollection<Technician>("technicians");
+  const inventory = useCollection<InventoryItem>("inventoryItems");
 
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<Ticket | null>(null);
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
@@ -165,6 +169,7 @@ export default function BoardPage() {
                     key={ticket.id}
                     ticket={ticket}
                     technicians={technicians.data}
+                    onRequestComplete={(t) => setCompleteTarget(t)}
                     onReturnToWaiting={(t) => void run(() => returnTicketToWaiting(t))}
                   />
                 ))}
@@ -185,6 +190,19 @@ export default function BoardPage() {
             const { ticket } = assignTarget;
             setAssignTarget(null);
             void run(() => assignTicketToBay(ticket, bayId, technicianId));
+          }}
+        />
+      )}
+
+      {completeTarget && (
+        <CompleteDialog
+          ticket={completeTarget}
+          inventory={inventory.data}
+          onClose={() => setCompleteTarget(null)}
+          onComplete={(partsUsed) => {
+            const ticket = completeTarget;
+            setCompleteTarget(null);
+            void run(() => completeTicket(ticket, partsUsed));
           }}
         />
       )}

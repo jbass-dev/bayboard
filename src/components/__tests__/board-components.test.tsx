@@ -1,8 +1,9 @@
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
 import BoardColumn from "../BoardColumn";
+import CompleteDialog from "../CompleteDialog";
 import TicketCard from "../TicketCard";
-import type { Technician, Ticket } from "../../types";
+import type { InventoryItem, Technician, Ticket } from "../../types";
 
 const technicians: Technician[] = [
   { id: "tech-1", name: "Alex" },
@@ -61,7 +62,7 @@ describe("TicketCard", () => {
       />,
     );
     expect(screen.getByText("Alex")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /back to waiting/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^back$/i }));
     expect(onReturnToWaiting).toHaveBeenCalledWith(inBayTicket);
   });
 
@@ -76,6 +77,73 @@ describe("TicketCard", () => {
     expect(
       screen.queryByRole("button", { name: /assign to bay/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("fires onRequestComplete when Complete is clicked on an in-bay ticket", () => {
+    const onRequestComplete = jest.fn();
+    render(
+      <TicketCard
+        ticket={inBayTicket}
+        technicians={technicians}
+        onRequestComplete={onRequestComplete}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^complete$/i }));
+    expect(onRequestComplete).toHaveBeenCalledWith(inBayTicket);
+  });
+
+  it("does not offer a complete button on a waiting ticket", () => {
+    render(
+      <TicketCard
+        ticket={waitingTicket}
+        technicians={technicians}
+        onRequestComplete={jest.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /^complete$/i }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("CompleteDialog", () => {
+  const inventory: InventoryItem[] = [
+    { id: "oil-5w30", name: "5W-30", kind: "oil", quantity: 20, lowStockThreshold: 8 },
+    { id: "ph7317", name: "PH7317", kind: "filter", quantity: 5, lowStockThreshold: 2 },
+  ];
+
+  it("completes with no parts when inventory is empty", () => {
+    const onComplete = jest.fn();
+    render(
+      <CompleteDialog
+        ticket={inBayTicket}
+        inventory={[]}
+        onComplete={onComplete}
+        onClose={jest.fn()}
+      />,
+    );
+    expect(screen.getByText(/no inventory items yet/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /complete service/i }));
+    expect(onComplete).toHaveBeenCalledWith([]);
+  });
+
+  it("records only the parts given a positive quantity", () => {
+    const onComplete = jest.fn();
+    render(
+      <CompleteDialog
+        ticket={inBayTicket}
+        inventory={inventory}
+        onComplete={onComplete}
+        onClose={jest.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("5W-30"), {
+      target: { value: "5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /complete service/i }));
+    expect(onComplete).toHaveBeenCalledWith([
+      { inventoryItemId: "oil-5w30", quantity: 5 },
+    ]);
   });
 });
 

@@ -5,13 +5,14 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import type {
+  PartUsed,
   ServiceType,
   Ticket,
   TicketStatus,
   Vehicle,
 } from "../types";
 import { db } from "./firebase";
-import { canTransition } from "./ticket-logic";
+import { canTransition, nextServiceDate } from "./ticket-logic";
 
 /** Create a new ticket in the waiting queue. */
 export async function createTicket(
@@ -59,6 +60,36 @@ export async function returnTicketToWaiting(ticket: Ticket): Promise<void> {
     since: new Date().toISOString(),
   };
   await updateDoc(doc(db, "tickets", ticket.id), { status });
+}
+
+/**
+ * Finish an in-bay ticket: record the parts used, stamp the completion
+ * time, and compute when the vehicle is next due for this service.
+ * Inventory quantities are decremented in Week 4.
+ */
+export async function completeTicket(
+  ticket: Ticket,
+  partsUsed: PartUsed[] = [],
+): Promise<void> {
+  if (!canTransition(ticket.status.kind, "complete")) {
+    throw new Error(`Cannot complete a ${ticket.status.kind} ticket.`);
+  }
+  // The guard above only passes for in-bay tickets; this narrows the type.
+  if (ticket.status.kind !== "in-bay") return;
+
+  const completedAt = new Date();
+  const status: TicketStatus = {
+    kind: "complete",
+    bayId: ticket.status.bayId,
+    technicianId: ticket.status.technicianId,
+    startedAt: ticket.status.startedAt,
+    completedAt: completedAt.toISOString(),
+  };
+  await updateDoc(doc(db, "tickets", ticket.id), {
+    status,
+    partsUsed,
+    nextServiceDate: nextServiceDate(ticket.service, completedAt).toISOString(),
+  });
 }
 
 /** One-time setup for a fresh shop: three bays and two technicians. */

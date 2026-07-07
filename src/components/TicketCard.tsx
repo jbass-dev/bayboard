@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import {
   SERVICE_LABELS,
   describeVehicle,
+  elapsedMinutes,
   formatElapsed,
   statusTimestamp,
 } from "../lib/board-logic";
+import { elapsedSeverity, type ElapsedSeverity } from "../lib/ticket-logic";
 import type { Technician, Ticket } from "../types";
 
 interface TicketCardProps {
@@ -14,7 +16,15 @@ interface TicketCardProps {
   technicians: Technician[];
   onRequestAssign?: (ticket: Ticket) => void;
   onReturnToWaiting?: (ticket: Ticket) => void;
+  onRequestComplete?: (ticket: Ticket) => void;
 }
+
+/** Badge colours by how long an in-bay service has been running. */
+const BADGE_TONE: Record<ElapsedSeverity, string> = {
+  normal: "bg-zinc-900 text-zinc-300",
+  warn: "bg-amber-500/20 text-amber-300",
+  over: "bg-red-500/20 text-red-300",
+};
 
 /**
  * One car on the board. Draggable between columns; buttons
@@ -25,6 +35,7 @@ export default function TicketCard({
   technicians,
   onRequestAssign,
   onReturnToWaiting,
+  onRequestComplete,
 }: TicketCardProps) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -37,6 +48,15 @@ export default function TicketCard({
     status.kind === "in-bay"
       ? technicians.find((t) => t.id === status.technicianId)
       : undefined;
+
+  // Only a running service is colour-coded; the waiting queue stays neutral.
+  const severity: ElapsedSeverity =
+    status.kind === "in-bay"
+      ? elapsedSeverity(
+          ticket.service,
+          elapsedMinutes(status.startedAt, now),
+        )
+      : "normal";
 
   return (
     <article
@@ -51,7 +71,9 @@ export default function TicketCard({
         <h3 className="font-semibold leading-tight text-zinc-100">
           {describeVehicle(ticket.vehicle)}
         </h3>
-        <span className="shrink-0 rounded-full bg-zinc-900 px-2 py-0.5 font-mono text-xs text-zinc-300">
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-xs font-medium ${BADGE_TONE[severity]}`}
+        >
           {formatElapsed(statusTimestamp(ticket), now)}
         </span>
       </div>
@@ -78,14 +100,27 @@ export default function TicketCard({
         </button>
       )}
 
-      {status.kind === "in-bay" && onReturnToWaiting && (
-        <button
-          type="button"
-          onClick={() => onReturnToWaiting(ticket)}
-          className="mt-2 w-full rounded-md border border-zinc-600 px-2 py-1 text-sm font-medium text-zinc-300 hover:bg-zinc-700"
-        >
-          Back to waiting
-        </button>
+      {status.kind === "in-bay" && (onRequestComplete || onReturnToWaiting) && (
+        <div className="mt-2 flex gap-2">
+          {onRequestComplete && (
+            <button
+              type="button"
+              onClick={() => onRequestComplete(ticket)}
+              className="flex-1 rounded-md bg-amber-500 px-2 py-1 text-sm font-semibold text-zinc-950 hover:bg-amber-400"
+            >
+              Complete
+            </button>
+          )}
+          {onReturnToWaiting && (
+            <button
+              type="button"
+              onClick={() => onReturnToWaiting(ticket)}
+              className="rounded-md border border-zinc-600 px-2 py-1 text-sm font-medium text-zinc-300 hover:bg-zinc-700"
+            >
+              Back
+            </button>
+          )}
+        </div>
       )}
     </article>
   );

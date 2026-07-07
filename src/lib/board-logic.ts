@@ -46,12 +46,17 @@ export function statusTimestamp(ticket: Ticket): string {
     : ticket.status.startedAt;
 }
 
-/** "4m", "1h 05m" — how long since the given ISO timestamp. */
-export function formatElapsed(fromIso: string, now: Date): string {
-  const mins = Math.max(
+/** Whole minutes since the given ISO timestamp, never negative. */
+export function elapsedMinutes(fromIso: string, now: Date): number {
+  return Math.max(
     0,
     Math.floor((now.getTime() - new Date(fromIso).getTime()) / 60_000),
   );
+}
+
+/** "4m", "1h 05m" — how long since the given ISO timestamp. */
+export function formatElapsed(fromIso: string, now: Date): string {
+  const mins = elapsedMinutes(fromIso, now);
   if (mins < 60) return `${mins}m`;
   const h = Math.floor(mins / 60);
   const m = mins % 60;

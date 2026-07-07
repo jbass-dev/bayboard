@@ -34,6 +34,33 @@ export function nextServiceDate(service: ServiceType, completedAt: Date): Date {
   return next;
 }
 
+/** How long a service should take, in minutes, before it's "running long". */
+export const SERVICE_TARGET_MINUTES: Record<ServiceType, number> = {
+  "oil-change": 20,
+  "tire-rotation": 30,
+  "engine-air-filter": 15,
+  "cabin-air-filter": 15,
+  "coolant-flush": 45,
+};
+
+/** Tracks how a running service compares to its target time. */
+export type ElapsedSeverity = "normal" | "warn" | "over";
+
+/**
+ * How a running service is tracking against its target time:
+ * "warn" once it reaches the target, "over" at 1.5x. Drives the
+ * colour of the elapsed-time badge so a long job stands out on the board.
+ */
+export function elapsedSeverity(
+  service: ServiceType,
+  minutesElapsed: number,
+): ElapsedSeverity {
+  const target = SERVICE_TARGET_MINUTES[service];
+  if (minutesElapsed >= target * 1.5) return "over";
+  if (minutesElapsed >= target) return "warn";
+  return "normal";
+}
+
 /**
  * Returns inventory with the used parts decremented.
  * Quantities never go below zero. Pure function — Firestore

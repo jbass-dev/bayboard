@@ -1,7 +1,9 @@
 import type { InventoryItem } from "../../types";
 import {
+  SERVICE_TARGET_MINUTES,
   applyPartsUsage,
   canTransition,
+  elapsedSeverity,
   isLowStock,
   nextServiceDate,
 } from "../ticket-logic";
@@ -38,6 +40,31 @@ describe("nextServiceDate", () => {
   it("rolls over year boundaries", () => {
     const next = nextServiceDate("tire-rotation", new Date("2026-11-01"));
     expect(next.toISOString().slice(0, 10)).toBe("2027-04-30");
+  });
+});
+
+describe("elapsedSeverity", () => {
+  it("stays normal below the target time", () => {
+    const target = SERVICE_TARGET_MINUTES["oil-change"];
+    expect(elapsedSeverity("oil-change", 0)).toBe("normal");
+    expect(elapsedSeverity("oil-change", target - 1)).toBe("normal");
+  });
+
+  it("warns once the service reaches its target", () => {
+    const target = SERVICE_TARGET_MINUTES["oil-change"];
+    expect(elapsedSeverity("oil-change", target)).toBe("warn");
+    expect(elapsedSeverity("oil-change", target + 1)).toBe("warn");
+  });
+
+  it("goes over at 1.5x the target", () => {
+    const target = SERVICE_TARGET_MINUTES["oil-change"];
+    expect(elapsedSeverity("oil-change", target * 1.5)).toBe("over");
+  });
+
+  it("uses each service's own target", () => {
+    // A coolant flush is allowed far longer than an oil change.
+    expect(elapsedSeverity("coolant-flush", 25)).toBe("normal");
+    expect(elapsedSeverity("oil-change", 25)).toBe("warn");
   });
 });
 
