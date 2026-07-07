@@ -65,7 +65,7 @@ export default function TicketCard({
         e.dataTransfer.setData("text/plain", ticket.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      className="cursor-grab rounded-lg border border-zinc-700 bg-zinc-800 p-3 shadow-md active:cursor-grabbing"
+      className="cursor-grab rounded-lg border border-zinc-600 bg-zinc-700 p-3 shadow-md active:cursor-grabbing"
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold leading-tight text-zinc-100">
