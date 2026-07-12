@@ -8,7 +8,11 @@ import {
   formatElapsed,
   statusTimestamp,
 } from "../lib/board-logic";
-import { elapsedSeverity, type ElapsedSeverity } from "../lib/ticket-logic";
+import {
+  elapsedSeverity,
+  waitSeverity,
+  type ElapsedSeverity,
+} from "../lib/ticket-logic";
 import type { Technician, Ticket } from "../types";
 
 interface TicketCardProps {
@@ -19,7 +23,7 @@ interface TicketCardProps {
   onRequestComplete?: (ticket: Ticket) => void;
 }
 
-/** Badge colours by how long an in-bay service has been running. */
+/** Badge colours by how long an in-bay service (or a waiting car) has been running. */
 const BADGE_TONE: Record<ElapsedSeverity, string> = {
   normal: "bg-zinc-900 text-zinc-300",
   warn: "bg-amber-500/20 text-amber-300",
@@ -37,10 +41,18 @@ const SEVERITY_MARK: Record<ElapsedSeverity, string> = {
   over: "■ ",
 };
 
-const SEVERITY_LABEL: Record<ElapsedSeverity, string> = {
+/** Spoken label for a car being serviced in a bay. */
+const BAY_LABEL: Record<ElapsedSeverity, string> = {
   normal: "on time",
   warn: "running long",
   over: "well over target",
+};
+
+/** Spoken label for a car still in the waiting queue. */
+const WAIT_LABEL: Record<ElapsedSeverity, string> = {
+  normal: "waiting",
+  warn: "waiting a while",
+  over: "waiting too long",
 };
 
 /**
@@ -66,11 +78,22 @@ export default function TicketCard({
       ? technicians.find((t) => t.id === status.technicianId)
       : undefined;
 
-  // Only a running service is colour-coded; the waiting queue stays neutral.
+  // In a bay: measured against the service's target time. Waiting: measured
+  // against how long a customer should sit in the queue. Completed: neutral.
   const severity: ElapsedSeverity =
     status.kind === "in-bay"
       ? elapsedSeverity(ticket.service, elapsedMinutes(status.startedAt, now))
-      : "normal";
+      : status.kind === "waiting"
+        ? waitSeverity(elapsedMinutes(status.since, now))
+        : "normal";
+
+  const elapsedText = formatElapsed(statusTimestamp(ticket), now);
+  const badgeLabel =
+    status.kind === "in-bay"
+      ? `${elapsedText} elapsed, ${BAY_LABEL[severity]}`
+      : status.kind === "waiting"
+        ? `${elapsedText} ${WAIT_LABEL[severity]}`
+        : `${elapsedText} elapsed`;
 
   return (
     <article
@@ -87,14 +110,10 @@ export default function TicketCard({
         </h3>
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-xs font-medium ${BADGE_TONE[severity]}`}
-          aria-label={
-            status.kind === "in-bay"
-              ? `${formatElapsed(statusTimestamp(ticket), now)} elapsed, ${SEVERITY_LABEL[severity]}`
-              : `${formatElapsed(statusTimestamp(ticket), now)} waiting`
-          }
+          aria-label={badgeLabel}
         >
           <span aria-hidden="true">{SEVERITY_MARK[severity]}</span>
-          {formatElapsed(statusTimestamp(ticket), now)}
+          {elapsedText}
         </span>
       </div>
 

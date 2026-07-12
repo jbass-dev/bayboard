@@ -101,3 +101,18 @@ export function lowStockItems(items: InventoryItem[]): InventoryItem[] {
         a.quantity - a.lowStockThreshold - (b.quantity - b.lowStockThreshold),
     );
 }
+
+/**
+ * How long a car can sit in the waiting queue before it's flagged. A customer
+ * watching the clock in the lobby is a different worry from a slow service, so
+ * these thresholds are about queue wait, not bay time.
+ */
+export const WAIT_WARN_MINUTES = 10;
+export const WAIT_OVER_MINUTES = 20;
+
+/** Badge severity for a waiting car, by minutes spent in the queue. */
+export function waitSeverity(minutesWaiting: number): ElapsedSeverity {
+  if (minutesWaiting >= WAIT_OVER_MINUTES) return "over";
+  if (minutesWaiting >= WAIT_WARN_MINUTES) return "warn";
+  return "normal";
+}

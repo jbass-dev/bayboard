@@ -7,6 +7,7 @@ import {
   isLowStock,
   lowStockItems,
   nextServiceDate,
+  waitSeverity,
 } from "../ticket-logic";
 
 describe("canTransition", () => {
@@ -130,5 +131,22 @@ describe("lowStockItems", () => {
   it("returns an empty list when everything is stocked", () => {
     const stocked = items.map((i) => ({ ...i, quantity: 100 }));
     expect(lowStockItems(stocked)).toEqual([]);
+  });
+});
+
+describe("waitSeverity", () => {
+  it("stays normal for a short queue wait", () => {
+    expect(waitSeverity(0)).toBe("normal");
+    expect(waitSeverity(9)).toBe("normal");
+  });
+
+  it("warns once a car has waited a while", () => {
+    expect(waitSeverity(10)).toBe("warn");
+    expect(waitSeverity(19)).toBe("warn");
+  });
+
+  it("flags a car that has waited too long", () => {
+    expect(waitSeverity(20)).toBe("over");
+    expect(waitSeverity(45)).toBe("over");
   });
 });
