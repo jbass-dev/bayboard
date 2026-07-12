@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { describeVehicle } from "../lib/board-logic";
+import { useEscapeKey } from "../lib/useEscapeKey";
 import type { Bay, Technician, Ticket } from "../types";
 
 interface AssignDialogProps {
@@ -25,6 +26,7 @@ export default function AssignDialog({
 }: AssignDialogProps) {
   const [bayId, setBayId] = useState(initialBayId ?? bays[0]?.id ?? "");
   const [technicianId, setTechnicianId] = useState(technicians[0]?.id ?? "");
+  useEscapeKey(onClose);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -39,9 +41,12 @@ export default function AssignDialog({
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assign-dialog-title"
         className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-4 shadow-xl"
       >
-        <h2 className="font-semibold text-zinc-100">
+        <h2 id="assign-dialog-title" className="font-semibold text-zinc-100">
           Assign {describeVehicle(ticket.vehicle)}
         </h2>
 

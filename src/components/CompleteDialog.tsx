@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { describeVehicle } from "../lib/board-logic";
+import { useEscapeKey } from "../lib/useEscapeKey";
 import type { InventoryItem, PartUsed, Ticket } from "../types";
 
 interface CompleteDialogProps {
@@ -24,6 +25,7 @@ export default function CompleteDialog({
   onClose,
 }: CompleteDialogProps) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  useEscapeKey(onClose);
 
   function setQty(itemId: string, value: string) {
     const n = Math.max(0, Math.floor(Number(value) || 0));
@@ -49,9 +51,12 @@ export default function CompleteDialog({
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="complete-dialog-title"
         className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-4 shadow-xl"
       >
-        <h2 className="font-semibold text-zinc-100">
+        <h2 id="complete-dialog-title" className="font-semibold text-zinc-100">
           Complete {describeVehicle(ticket.vehicle)}
         </h2>
 

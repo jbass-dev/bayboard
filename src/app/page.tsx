@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import AssignDialog from "../components/AssignDialog";
 import BoardColumn from "../components/BoardColumn";
 import CompleteDialog from "../components/CompleteDialog";
+import LowStockBanner from "../components/LowStockBanner";
 import NewTicketForm from "../components/NewTicketForm";
 import TicketCard from "../components/TicketCard";
 import {
@@ -14,10 +15,17 @@ import {
   returnTicketToWaiting,
   seedDefaults,
 } from "../lib/board-actions";
-import { bayTickets, sortBays, waitingTickets } from "../lib/board-logic";
+import { seedDemoData } from "../lib/demo-data";
+import {
+  bayTickets,
+  describeVehicle,
+  sortBays,
+  waitingTickets,
+} from "../lib/board-logic";
 import { auth } from "../lib/firebase";
 import { useAuth } from "../lib/useAuth";
 import { useCollection } from "../lib/useCollection";
+import AppNav from "../components/AppNav";
 import type { Bay, InventoryItem, Technician, Ticket } from "../types";
 
 interface AssignTarget {
@@ -39,6 +47,8 @@ export default function BoardPage() {
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
+  // Announced to screen readers when a ticket moves — the board's live region.
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
@@ -68,12 +78,19 @@ export default function BoardPage() {
     }
   }
 
+  function bayName(bayId: string): string {
+    return bays.data.find((b) => b.id === bayId)?.name ?? "a bay";
+  }
+
   /** Card dropped on a bay column. */
   function handleDropOnBay(bayId: string, ticketId: string) {
     const ticket = tickets.data.find((t) => t.id === ticketId);
     if (!ticket || ticket.status.kind !== "waiting") return;
     if (technicians.data.length === 1) {
       void run(() => assignTicketToBay(ticket, bayId, technicians.data[0].id));
+      setAnnouncement(
+        `${describeVehicle(ticket.vehicle)} moved to ${bayName(bayId)}.`,
+      );
     } else {
       setAssignTarget({ ticket, bayId });
     }
@@ -84,14 +101,20 @@ export default function BoardPage() {
     const ticket = tickets.data.find((t) => t.id === ticketId);
     if (!ticket || ticket.status.kind !== "in-bay") return;
     void run(() => returnTicketToWaiting(ticket));
+    setAnnouncement(
+      `${describeVehicle(ticket.vehicle)} moved back to the waiting queue.`,
+    );
   }
 
   return (
     <main className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between gap-4 border-b border-zinc-800 bg-zinc-900/80 px-4 py-3">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-100">
-          Bay<span className="text-amber-500">Board</span>
-        </h1>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-900/80 px-4 py-3">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold tracking-tight text-zinc-100">
+            Bay<span className="text-amber-500">Board</span>
+          </h1>
+          <AppNav current="board" />
+        </div>
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -100,13 +123,13 @@ export default function BoardPage() {
           >
             + New ticket
           </button>
-          <span className="hidden text-sm text-zinc-500 sm:inline">
+          <span className="hidden text-sm text-zinc-400 sm:inline">
             {user.email}
           </span>
           <button
             type="button"
             onClick={() => signOut(auth)}
-            className="text-sm text-zinc-500 hover:text-zinc-300"
+            className="text-sm text-zinc-400 hover:text-zinc-200"
           >
             Sign out
           </button>
@@ -114,29 +137,52 @@ export default function BoardPage() {
       </header>
 
       {(actionError || loadError) && (
-        <p className="border-b border-red-900 bg-red-950 px-4 py-2 text-sm text-red-400">
+        <p className="border-b border-red-900 bg-red-950 px-4 py-2 text-sm text-red-300">
           {actionError ?? loadError}
         </p>
       )}
+
+      <LowStockBanner inventory={inventory.data} />
+
+      {/* Screen-reader-only running commentary of board changes. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center text-zinc-500">
           Loading the board…
         </div>
       ) : orderedBays.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-          <p className="text-zinc-400">No bays set up yet.</p>
-          <button
-            type="button"
-            disabled={seeding}
-            onClick={() => {
-              setSeeding(true);
-              void run(seedDefaults).finally(() => setSeeding(false));
-            }}
-            className="rounded-md bg-amber-500 px-4 py-2 font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
-          >
-            {seeding ? "Setting up…" : "Create 3 bays + 2 technicians"}
-          </button>
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+          <p className="max-w-sm text-zinc-400">
+            Empty shop. Load demo data to explore a busy Saturday, or start
+            from scratch.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              disabled={seeding}
+              onClick={() => {
+                setSeeding(true);
+                void run(seedDemoData).finally(() => setSeeding(false));
+              }}
+              className="rounded-md bg-amber-500 px-4 py-2 font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
+            >
+              {seeding ? "Loading…" : "Load demo data"}
+            </button>
+            <button
+              type="button"
+              disabled={seeding}
+              onClick={() => {
+                setSeeding(true);
+                void run(seedDefaults).finally(() => setSeeding(false));
+              }}
+              className="rounded-md border border-zinc-600 px-4 py-2 font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+            >
+              Just 3 bays + 2 techs
+            </button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-1 items-start gap-4 overflow-x-auto p-4">
@@ -170,7 +216,12 @@ export default function BoardPage() {
                     ticket={ticket}
                     technicians={technicians.data}
                     onRequestComplete={(t) => setCompleteTarget(t)}
-                    onReturnToWaiting={(t) => void run(() => returnTicketToWaiting(t))}
+                    onReturnToWaiting={(t) => {
+                      void run(() => returnTicketToWaiting(t));
+                      setAnnouncement(
+                        `${describeVehicle(t.vehicle)} moved back to the waiting queue.`,
+                      );
+                    }}
                   />
                 ))}
               </BoardColumn>
@@ -190,6 +241,9 @@ export default function BoardPage() {
             const { ticket } = assignTarget;
             setAssignTarget(null);
             void run(() => assignTicketToBay(ticket, bayId, technicianId));
+            setAnnouncement(
+              `${describeVehicle(ticket.vehicle)} moved to ${bayName(bayId)}.`,
+            );
           }}
         />
       )}
@@ -203,6 +257,9 @@ export default function BoardPage() {
             const ticket = completeTarget;
             setCompleteTarget(null);
             void run(() => completeTicket(ticket, partsUsed));
+            setAnnouncement(
+              `${describeVehicle(ticket.vehicle)} completed and cleared from the bay.`,
+            );
           }}
         />
       )}

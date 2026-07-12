@@ -27,6 +27,23 @@ const BADGE_TONE: Record<ElapsedSeverity, string> = {
 };
 
 /**
+ * A shape as well as a colour for each severity, so the badge reads for
+ * colour-blind users and passes the Week 5 accessibility bar. The mark is
+ * decorative (aria-hidden); the spoken meaning lives in the badge's label.
+ */
+const SEVERITY_MARK: Record<ElapsedSeverity, string> = {
+  normal: "",
+  warn: "▲ ",
+  over: "■ ",
+};
+
+const SEVERITY_LABEL: Record<ElapsedSeverity, string> = {
+  normal: "on time",
+  warn: "running long",
+  over: "well over target",
+};
+
+/**
  * One car on the board. Draggable between columns; buttons
  * cover touch screens where drag-and-drop is unreliable.
  */
@@ -52,10 +69,7 @@ export default function TicketCard({
   // Only a running service is colour-coded; the waiting queue stays neutral.
   const severity: ElapsedSeverity =
     status.kind === "in-bay"
-      ? elapsedSeverity(
-          ticket.service,
-          elapsedMinutes(status.startedAt, now),
-        )
+      ? elapsedSeverity(ticket.service, elapsedMinutes(status.startedAt, now))
       : "normal";
 
   return (
@@ -73,7 +87,13 @@ export default function TicketCard({
         </h3>
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-xs font-medium ${BADGE_TONE[severity]}`}
+          aria-label={
+            status.kind === "in-bay"
+              ? `${formatElapsed(statusTimestamp(ticket), now)} elapsed, ${SEVERITY_LABEL[severity]}`
+              : `${formatElapsed(statusTimestamp(ticket), now)} waiting`
+          }
         >
+          <span aria-hidden="true">{SEVERITY_MARK[severity]}</span>
           {formatElapsed(statusTimestamp(ticket), now)}
         </span>
       </div>
@@ -87,7 +107,7 @@ export default function TicketCard({
       )}
 
       {ticket.notes && (
-        <p className="mt-1 text-xs text-zinc-500">{ticket.notes}</p>
+        <p className="mt-1 text-xs text-zinc-400">{ticket.notes}</p>
       )}
 
       {status.kind === "waiting" && onRequestAssign && (
@@ -115,7 +135,7 @@ export default function TicketCard({
             <button
               type="button"
               onClick={() => onReturnToWaiting(ticket)}
-              className="rounded-md border border-zinc-600 px-2 py-1 text-sm font-medium text-zinc-300 hover:bg-zinc-700"
+              className="rounded-md border border-zinc-500 px-2 py-1 text-sm font-medium text-zinc-200 hover:bg-zinc-700"
             >
               Back
             </button>

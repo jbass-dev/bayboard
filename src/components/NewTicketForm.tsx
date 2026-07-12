@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { createTicket } from "../lib/board-actions";
 import { SERVICE_LABELS } from "../lib/board-logic";
+import { useEscapeKey } from "../lib/useEscapeKey";
 import type { ServiceType } from "../types";
 
 interface NewTicketFormProps {
@@ -18,6 +19,7 @@ export default function NewTicketForm({ onClose }: NewTicketFormProps) {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useEscapeKey(onClose);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -47,9 +49,14 @@ export default function NewTicketForm({ onClose }: NewTicketFormProps) {
       <form
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-ticket-title"
         className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-4 shadow-xl"
       >
-        <h2 className="font-semibold text-zinc-100">New ticket</h2>
+        <h2 id="new-ticket-title" className="font-semibold text-zinc-100">
+          New ticket
+        </h2>
 
         <div className="mt-3 grid grid-cols-3 gap-2">
           <label className="block text-sm">

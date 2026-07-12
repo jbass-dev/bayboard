@@ -5,6 +5,7 @@ import {
   canTransition,
   elapsedSeverity,
   isLowStock,
+  lowStockItems,
   nextServiceDate,
 } from "../ticket-logic";
 
@@ -106,5 +107,28 @@ describe("isLowStock", () => {
     };
     expect(isLowStock(item)).toBe(true);
     expect(isLowStock({ ...item, quantity: 3 })).toBe(false);
+  });
+});
+
+describe("lowStockItems", () => {
+  const items: InventoryItem[] = [
+    { id: "oil", name: "5W-30", kind: "oil", quantity: 20, lowStockThreshold: 8 },
+    { id: "f1", name: "PH7317", kind: "filter", quantity: 6, lowStockThreshold: 6 },
+    { id: "f2", name: "CA10467", kind: "filter", quantity: 1, lowStockThreshold: 4 },
+  ];
+
+  it("returns only items at or below threshold", () => {
+    const low = lowStockItems(items);
+    expect(low.map((i) => i.id)).toEqual(["f2", "f1"]);
+  });
+
+  it("orders the most-depleted item first", () => {
+    // f2 is 3 below threshold, f1 is exactly at it, so f2 leads.
+    expect(lowStockItems(items)[0].id).toBe("f2");
+  });
+
+  it("returns an empty list when everything is stocked", () => {
+    const stocked = items.map((i) => ({ ...i, quantity: 100 }));
+    expect(lowStockItems(stocked)).toEqual([]);
   });
 });

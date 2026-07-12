@@ -87,3 +87,17 @@ export function applyPartsUsage(
 export function isLowStock(item: InventoryItem): boolean {
   return item.quantity <= item.lowStockThreshold;
 }
+
+/**
+ * Every item at or below its low-stock threshold, so the board can
+ * show an alert before a shelf is empty. Ordered most-depleted first
+ * (by how far below threshold) so the tightest item reads at the top.
+ */
+export function lowStockItems(items: InventoryItem[]): InventoryItem[] {
+  return items
+    .filter(isLowStock)
+    .sort(
+      (a, b) =>
+        a.quantity - a.lowStockThreshold - (b.quantity - b.lowStockThreshold),
+    );
+}
