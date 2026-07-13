@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jbass-dev/bayboard/actions/workflows/ci.yml/badge.svg)](https://github.com/jbass-dev/bayboard/actions/workflows/ci.yml)
 
-**Live demo:** _add your Vercel URL here_ · sign in and hit **Load demo data** to explore a busy Saturday in ten seconds.
+**Live demo:** [bayboard-1zyz.vercel.app](https://bayboard-1zyz.vercel.app) · sign in and hit **Load demo data** to explore a busy Saturday in ten seconds.
 
 Quick-lube shops run on whiteboards, sticky notes, and the manager's memory. I managed one for seven years — BayBoard is the shop-floor board I wish I had: a real-time dashboard showing what's waiting, what's in each bay, how long it's been running, and whether we're about to run out of the parts the next car needs.
 
@@ -35,7 +35,7 @@ Completing a ticket doesn't just flip its status — it writes the status change
 - **Keyboard operable** — every board action (assign, complete, return to waiting) is a real button; dialogs close on `Escape` and expose `role="dialog"` with a labelled title.
 - **Announced** — ticket moves and completions are announced through an ARIA live region; the low-stock banner uses `role="status"`.
 - **Not colour alone** — the elapsed-time badge carries a shape marker and a spoken label ("running long", "well over target") alongside its colour, and low inventory is labelled "Low stock" in text.
-- **Lighthouse accessibility: _≥ 95_** (fill in the measured score from the deployed build).
+- **Lighthouse accessibility: 95** on the deployed build (alongside Performance 99, Best Practices 96, SEO 100).
 
 ## Data model
 
