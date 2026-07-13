@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jbass-dev/bayboard/actions/workflows/ci.yml/badge.svg)](https://github.com/jbass-dev/bayboard/actions/workflows/ci.yml)
 
-**Live demo:** [bayboard-1zyz.vercel.app](https://bayboard-1zyz.vercel.app) · sign in and hit **Load demo data** to explore a busy Saturday in ten seconds.
+**Live demo:** [bayboard.vercel.app](https://bayboard.vercel.app) · sign in and hit **Load demo data** to explore a busy Saturday in ten seconds.
 
 Quick-lube shops run on whiteboards, sticky notes, and the manager's memory. I managed one for seven years — BayBoard is the shop-floor board I wish I had: a real-time dashboard showing what's waiting, what's in each bay, how long it's been running, and whether we're about to run out of the parts the next car needs.
 
