@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 
-export type NavKey = "board" | "inventory" | "checklists" | "summary";
+export type NavKey =
+  | "board"
+  | "schedule"
+  | "inventory"
+  | "checklists"
+  | "summary";
 
 const LINKS: { key: NavKey; href: string; label: string }[] = [
   { key: "board", href: "/", label: "Board" },
+  { key: "schedule", href: "/schedule", label: "Schedule" },
   { key: "inventory", href: "/inventory", label: "Inventory" },
   { key: "checklists", href: "/checklists", label: "Checklists" },
   { key: "summary", href: "/summary", label: "Summary" },

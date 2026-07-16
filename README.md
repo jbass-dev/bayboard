@@ -16,6 +16,18 @@ Quick-lube shops run on whiteboards, sticky notes, and the manager's memory. I m
 - **Inventory** — a stocked shelf of oil grades and filters with per-item low-stock thresholds. Completing a ticket decrements the parts it used inside a Firestore transaction; crossing a threshold raises a live alert banner on the board.
 - **Checklists** — digital opening and closing procedures that reset each day, every item tappable and time-stamped.
 - **Day summary** — cars served, average time per bay, and services by type, including a bar chart.
+- **Auto-scheduler** — a constraint-satisfaction solver that fills the week's open shifts in one click, respecting certifications, availability, double-booking, and weekly-hours caps — and explains, technician by technician, any shift it could not fill.
+
+## The auto-scheduler
+
+`/schedule` posts the week's shift requirements (role, time, required certifications, headcount). **Auto-fill** runs a backtracking CSP solver ([`src/lib/schedule-solver.ts`](src/lib/schedule-solver.ts)):
+
+- Shifts expand into per-headcount **slots**; each slot's candidates are the technicians who hold the required certs and whose availability covers the window.
+- Backtracking search with the **minimum-remaining-values heuristic** assigns slots tightest-first, preferring the least-loaded technician, and undoes choices that strand a later slot — cases where a greedy pass would fail.
+- If the week is over-constrained, an **iterative max-fill** pass sets aside the tightest slot and re-solves, so the result is always the largest schedule the solver could prove.
+- Nothing is left unexplained: every unfilled slot reports why *each* technician was ruled out ("missing State inspection certification", "already working Opener Mon 08:00–16:00", "would exceed the 20h weekly cap") as a typed discriminated union, rendered as plain sentences.
+
+The solver is a pure function — no Firestore, no clock — which is why all of it is unit-tested, including the backtracking case and the explanations.
 
 ## Why the inventory decrement is the interesting part
 
@@ -31,7 +43,7 @@ Completing a ticket doesn't just flip its status — it writes the status change
 
 ## Testing & accessibility
 
-- **59 tests** run in CI on every push: **41 unit tests** (status transitions, next-service dates, inventory decrement, low-stock detection, checklist toggling, day-summary rollups) and **18 React Testing Library / component tests** (board cards, complete flow, inventory restock and low-stock banner, add-item form).
+- **78 tests** run in CI on every push: **60 unit tests** (status transitions, next-service dates, inventory decrement, low-stock detection, checklist toggling, day-summary rollups, and the full auto-scheduler — constraint checks, backtracking, max-fill, and unfilled-slot explanations) and **18 React Testing Library / component tests** (board cards, complete flow, inventory restock and low-stock banner, add-item form).
 - **Keyboard operable** — every board action (assign, complete, return to waiting) is a real button; dialogs close on `Escape` and expose `role="dialog"` with a labelled title.
 - **Announced** — ticket moves and completions are announced through an ARIA live region; the low-stock banner uses `role="status"`.
 - **Not colour alone** — the elapsed-time badge carries a shape marker and a spoken label ("running long", "well over target") alongside its colour, and low inventory is labelled "Low stock" in text.
@@ -45,9 +57,11 @@ Firestore collections:
 |---|---|
 | `tickets` | Vehicle, service, status (`waiting` → `in-bay` → `complete`), parts used, next-service date |
 | `bays` | Service bays shown as board columns |
-| `technicians` | Who's on the floor |
+| `technicians` | Who's on the floor — plus certifications, availability windows, and weekly-hours cap for scheduling |
 | `inventoryItems` | Oil grades and filter part numbers, quantity + low-stock threshold |
 | `checklists` | Opening/closing lists, one document per day (`YYYY-MM-DD_opening`) |
+| `shiftRequirements` | Staffing needs: date, time window, role, required certs, headcount |
+| `shiftAssignments` | A technician placed on a shift, by hand or by the auto-scheduler |
 
 Types live in [`src/types/index.ts`](src/types/index.ts). Status transitions, next-service dates, inventory decrement, checklist, and summary logic are pure functions in [`src/lib`](src/lib) — that's what the unit tests target.
 

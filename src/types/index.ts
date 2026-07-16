@@ -58,9 +58,49 @@ export interface Bay {
   sortOrder: number;
 }
 
+/** Certifications a shift can require and a technician can hold. */
+export type TechCertification = "keyholder" | "state-inspection" | "brakes";
+
+/**
+ * A recurring window a technician can work.
+ * `weekday` matches Date#getDay(): 0 = Sunday … 6 = Saturday.
+ * Times are 24h "HH:MM" local.
+ */
+export interface AvailabilityWindow {
+  weekday: number;
+  start: string;
+  end: string;
+}
+
 export interface Technician {
   id: string;
   name: string;
+  /** Scheduling fields — optional so pre-scheduling documents stay valid. */
+  certifications?: TechCertification[];
+  availability?: AvailabilityWindow[];
+  /** Weekly-hours cap; the solver defaults to 40 when absent. */
+  maxWeeklyHours?: number;
+}
+
+/**
+ * One staffing need: "we need `headcount` technicians with `requiredCerts`
+ * from `start` to `end` on `date`". The solver fills these.
+ */
+export interface ShiftRequirement {
+  id: string;
+  date: string; // YYYY-MM-DD
+  start: string; // "08:00"
+  end: string; // "16:00"
+  role: string; // "Opener", "Floor", "Closer"
+  requiredCerts: TechCertification[];
+  headcount: number;
+}
+
+/** A technician placed on a shift, by hand or by the auto-scheduler. */
+export interface ShiftAssignment {
+  id: string;
+  shiftId: string;
+  technicianId: string;
 }
 
 export interface InventoryItem {
