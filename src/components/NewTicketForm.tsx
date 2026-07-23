@@ -17,6 +17,8 @@ export default function NewTicketForm({ onClose }: NewTicketFormProps) {
   const [model, setModel] = useState("");
   const [service, setService] = useState<ServiceType>("oil-change");
   const [notes, setNotes] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEscapeKey(onClose);
@@ -26,10 +28,12 @@ export default function NewTicketForm({ onClose }: NewTicketFormProps) {
     setSaving(true);
     setError(null);
     try {
+      const email = customerEmail.trim();
       await createTicket(
         { year: Number(year), make: make.trim(), model: model.trim() },
         service,
         notes.trim(),
+        email ? { name: customerName.trim(), email } : undefined,
       );
       onClose();
     } catch (err) {
@@ -114,6 +118,31 @@ export default function NewTicketForm({ onClose }: NewTicketFormProps) {
             className={inputClass}
           />
         </label>
+
+        <fieldset className="mt-3 rounded-md border border-zinc-700 p-2">
+          <legend className="px-1 text-xs text-zinc-500">
+            Customer (optional — for next-service reminders)
+          </legend>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block text-sm">
+              <span className="text-zinc-400">Name</span>
+              <input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="text-zinc-400">Email</span>
+              <input
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                className={inputClass}
+              />
+            </label>
+          </div>
+        </fieldset>
 
         {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
 

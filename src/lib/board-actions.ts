@@ -7,6 +7,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import type {
+  Customer,
   InventoryItem,
   PartUsed,
   ServiceType,
@@ -22,6 +23,7 @@ export async function createTicket(
   vehicle: Vehicle,
   service: ServiceType,
   notes = "",
+  customer?: Customer,
 ): Promise<void> {
   const nowIso = new Date().toISOString();
   const status: TicketStatus = { kind: "waiting", since: nowIso };
@@ -31,6 +33,9 @@ export async function createTicket(
     status,
     partsUsed: [],
     notes,
+    // Only persist a customer when an email was given — Firestore rejects
+    // undefined, and a reminder needs somewhere to send.
+    ...(customer?.email ? { customer } : {}),
     createdAt: nowIso,
   });
 }

@@ -1,10 +1,9 @@
 "use client";
 
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import AppNav from "../../components/AppNav";
-import { auth } from "../../lib/firebase";
+import HeaderUser from "../../components/HeaderUser";
 import {
   autoFillSchedule,
   clearAssignments,
@@ -16,7 +15,7 @@ import {
   describeRuling,
   type UnfilledSlot,
 } from "../../lib/schedule-solver";
-import { useAuth } from "../../lib/useAuth";
+import { useRole } from "../../lib/RoleProvider";
 import { useCollection } from "../../lib/useCollection";
 import type {
   ShiftAssignment,
@@ -36,7 +35,7 @@ function dayLabel(date: string): string {
 
 export default function SchedulePage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isManager } = useRole();
   const shifts = useCollection<ShiftRequirement>("shiftRequirements");
   const technicians = useCollection<Technician>("technicians");
   const assignments = useCollection<ShiftAssignment>("shiftAssignments");
@@ -46,8 +45,10 @@ export default function SchedulePage() {
   const [lastUnfilled, setLastUnfilled] = useState<UnfilledSlot[] | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) router.replace("/login");
-  }, [authLoading, user, router]);
+    if (authLoading) return;
+    if (!user) router.replace("/login");
+    else if (!isManager) router.replace("/"); // technicians: board only
+  }, [authLoading, user, isManager, router]);
 
   const byDate = useMemo(() => {
     const grouped = new Map<string, ShiftRequirement[]>();
@@ -62,7 +63,7 @@ export default function SchedulePage() {
     return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [shifts.data]);
 
-  if (authLoading || !user) {
+  if (authLoading || !user || !isManager) {
     return (
       <main className="flex min-h-screen items-center justify-center text-zinc-500">
         Loading…
@@ -115,14 +116,7 @@ export default function SchedulePage() {
           <AppNav current="schedule" />
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-zinc-400 sm:inline">{user.email}</span>
-          <button
-            type="button"
-            onClick={() => signOut(auth)}
-            className="text-sm text-zinc-400 hover:text-zinc-200"
-          >
-            Sign out
-          </button>
+          <HeaderUser />
         </div>
       </header>
 

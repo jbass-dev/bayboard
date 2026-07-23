@@ -1,16 +1,15 @@
 "use client";
 
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AppNav from "../../components/AppNav";
+import HeaderUser from "../../components/HeaderUser";
 import {
   ensureTodayChecklists,
   toggleChecklistItem,
 } from "../../lib/checklist-actions";
 import { checklistProgress, todayKey } from "../../lib/checklist-logic";
-import { auth } from "../../lib/firebase";
-import { useAuth } from "../../lib/useAuth";
+import { useRole } from "../../lib/RoleProvider";
 import { useCollection } from "../../lib/useCollection";
 import type { Checklist } from "../../types";
 
@@ -29,7 +28,7 @@ function stampTime(iso: string): string {
 
 export default function ChecklistsPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useRole();
   const checklists = useCollection<Checklist>("checklists");
 
   const [actionError, setActionError] = useState<string | null>(null);
@@ -77,16 +76,7 @@ export default function ChecklistsPage() {
           <AppNav current="checklists" />
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-zinc-400 sm:inline">
-            {user.email}
-          </span>
-          <button
-            type="button"
-            onClick={() => signOut(auth)}
-            className="text-sm text-zinc-400 hover:text-zinc-200"
-          >
-            Sign out
-          </button>
+          <HeaderUser />
         </div>
       </header>
 

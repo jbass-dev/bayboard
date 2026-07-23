@@ -40,6 +40,12 @@ export interface PartUsed {
   quantity: number;
 }
 
+/** Optional customer contact, used for next-service reminder emails. */
+export interface Customer {
+  name: string;
+  email: string;
+}
+
 export interface Ticket {
   id: string;
   vehicle: Vehicle;
@@ -47,8 +53,12 @@ export interface Ticket {
   status: TicketStatus;
   partsUsed: PartUsed[];
   notes: string;
+  /** Optional contact for next-service reminder emails. */
+  customer?: Customer;
   /** Set when the ticket completes, from service type + completion date. */
   nextServiceDate?: string;
+  /** ISO timestamp the next-service reminder was sent; guards against resends. */
+  reminderSentAt?: string;
   createdAt: string;
 }
 

@@ -1,7 +1,7 @@
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "./firebase";
 import { nextServiceDate } from "./ticket-logic";
-import type { ServiceType } from "../types";
+import type { Customer, PartUsed, ServiceType, Vehicle } from "../types";
 
 /** ISO timestamp for today at the given local hour and minute. */
 function todayAt(hour: number, minute: number): string {
@@ -82,7 +82,19 @@ export async function seedDemoData(): Promise<void> {
   ]);
 
   // Completed earlier today, so the summary and per-bay stats have data.
-  const completed = [
+  // A couple carry a customer so the summary's service-reminder panel has
+  // something to show. Their next-service dates are months out, so the board's
+  // auto-scan leaves them alone until they're actually due.
+  const completed: {
+    vehicle: Vehicle;
+    service: ServiceType;
+    bayId: string;
+    technicianId: string;
+    startedAt: string;
+    completedAt: string;
+    partsUsed: PartUsed[];
+    customer?: Customer;
+  }[] = [
     {
       vehicle: { year: 2019, make: "Nissan", model: "Altima" },
       service: "oil-change" as ServiceType,
@@ -94,6 +106,7 @@ export async function seedDemoData(): Promise<void> {
         { inventoryItemId: oil5w30.id, quantity: 5 },
         { inventoryItemId: filterPh.id, quantity: 1 },
       ],
+      customer: { name: "Dana Reyes", email: "dana.reyes@example.com" },
     },
     {
       vehicle: { year: 2022, make: "Mazda", model: "CX-5" },
@@ -103,6 +116,7 @@ export async function seedDemoData(): Promise<void> {
       startedAt: todayAt(8, 30),
       completedAt: todayAt(8, 52),
       partsUsed: [{ inventoryItemId: oil0w20.id, quantity: 5 }],
+      customer: { name: "Sam Okafor", email: "sam.okafor@example.com" },
     },
     {
       vehicle: { year: 2017, make: "Chevrolet", model: "Malibu" },
@@ -129,6 +143,7 @@ export async function seedDemoData(): Promise<void> {
         },
         partsUsed: c.partsUsed,
         notes: "",
+        ...(c.customer ? { customer: c.customer } : {}),
         nextServiceDate: nextServiceDate(
           c.service,
           new Date(c.completedAt),

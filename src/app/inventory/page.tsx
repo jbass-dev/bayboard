@@ -1,10 +1,10 @@
 "use client";
 
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AddInventoryForm from "../../components/AddInventoryForm";
 import AppNav from "../../components/AppNav";
+import HeaderUser from "../../components/HeaderUser";
 import InventoryRow from "../../components/InventoryRow";
 import {
   createInventoryItem,
@@ -12,15 +12,14 @@ import {
   seedInventory,
   updateInventoryItem,
 } from "../../lib/board-actions";
-import { auth } from "../../lib/firebase";
 import { lowStockItems } from "../../lib/ticket-logic";
-import { useAuth } from "../../lib/useAuth";
+import { useRole } from "../../lib/RoleProvider";
 import { useCollection } from "../../lib/useCollection";
 import type { InventoryItem } from "../../types";
 
 export default function InventoryPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isManager } = useRole();
   const inventory = useCollection<InventoryItem>("inventoryItems");
 
   const [showAdd, setShowAdd] = useState(false);
@@ -28,10 +27,12 @@ export default function InventoryPage() {
   const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) router.replace("/login");
-  }, [authLoading, user, router]);
+    if (authLoading) return;
+    if (!user) router.replace("/login");
+    else if (!isManager) router.replace("/"); // technicians: board only
+  }, [authLoading, user, isManager, router]);
 
-  if (authLoading || !user) {
+  if (authLoading || !user || !isManager) {
     return (
       <main className="flex min-h-screen items-center justify-center text-zinc-500">
         Loading…
@@ -74,16 +75,7 @@ export default function InventoryPage() {
           >
             + Add item
           </button>
-          <span className="hidden text-sm text-zinc-400 sm:inline">
-            {user.email}
-          </span>
-          <button
-            type="button"
-            onClick={() => signOut(auth)}
-            className="text-sm text-zinc-400 hover:text-zinc-200"
-          >
-            Sign out
-          </button>
+          <HeaderUser />
         </div>
       </header>
 

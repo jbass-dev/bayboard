@@ -2,6 +2,7 @@
 
 import {
   createUserWithEmailAndPassword,
+  signInAnonymously,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -40,6 +41,18 @@ export default function LoginPage() {
           ? "Could not create the account. Password must be at least 6 characters."
           : "Wrong email or password.",
       );
+      setBusy(false);
+    }
+  }
+
+  async function handleGuest() {
+    setBusy(true);
+    setError(null);
+    try {
+      await signInAnonymously(auth);
+      router.replace("/");
+    } catch {
+      setError("Could not start a guest session. Try again.");
       setBusy(false);
     }
   }
@@ -132,6 +145,21 @@ export default function LoginPage() {
           className="mt-4 w-full rounded-md bg-amber-500 px-3 py-2 font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
         >
           {busy ? "One sec…" : isSignup ? "Create account" : "Sign in"}
+        </button>
+
+        <div className="mt-4 flex items-center gap-3 text-xs text-zinc-600">
+          <span className="h-px flex-1 bg-zinc-800" />
+          or
+          <span className="h-px flex-1 bg-zinc-800" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGuest}
+          disabled={busy}
+          className="mt-4 w-full rounded-md border border-zinc-600 px-3 py-2 font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+        >
+          Continue as guest
         </button>
 
         <button

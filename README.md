@@ -43,7 +43,7 @@ Completing a ticket doesn't just flip its status — it writes the status change
 
 ## Testing & accessibility
 
-- **78 tests** run in CI on every push: **60 unit tests** (status transitions, next-service dates, inventory decrement, low-stock detection, checklist toggling, day-summary rollups, and the full auto-scheduler — constraint checks, backtracking, max-fill, and unfilled-slot explanations) and **18 React Testing Library / component tests** (board cards, complete flow, inventory restock and low-stock banner, add-item form).
+- **81 tests** run in CI on every push: **63 unit tests** (status transitions, next-service dates, inventory decrement, low-stock detection, checklist toggling, day-summary rollups, and the full auto-scheduler — constraint checks, backtracking, max-fill, and unfilled-slot explanations) and **18 React Testing Library / component tests** (board cards, complete flow, inventory restock and low-stock banner, add-item form).
 - **Keyboard operable** — every board action (assign, complete, return to waiting) is a real button; dialogs close on `Escape` and expose `role="dialog"` with a labelled title.
 - **Announced** — ticket moves and completions are announced through an ARIA live region; the low-stock banner uses `role="status"`.
 - **Not colour alone** — the elapsed-time badge carries a shape marker and a spoken label ("running long", "well over target") alongside its colour, and low inventory is labelled "Low stock" in text.

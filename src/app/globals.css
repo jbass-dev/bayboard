@@ -22,3 +22,44 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Shown only on the printed page (e.g. the end-of-day report masthead). */
+.print-only {
+  display: none;
+}
+
+/*
+ * Print stylesheet for the end-of-day report. The board is a dark on-screen
+ * theme, but a printout should be ink-friendly: white paper, black text,
+ * chrome (nav, buttons, sign-out) removed. Elements marked `.no-print` are
+ * dropped; `#report` and its contents are recoloured for paper.
+ */
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    color-scheme: light;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  #report,
+  #report * {
+    color: #000000 !important;
+    background: transparent !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Keep chart bar colours (amber) on the printed page. */
+  #report svg {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

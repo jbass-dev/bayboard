@@ -1,13 +1,14 @@
 "use client";
 
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AssignDialog from "../components/AssignDialog";
 import BoardColumn from "../components/BoardColumn";
 import CompleteDialog from "../components/CompleteDialog";
+import HeaderUser from "../components/HeaderUser";
 import LowStockBanner from "../components/LowStockBanner";
 import NewTicketForm from "../components/NewTicketForm";
+import ReminderScanner from "../components/ReminderScanner";
 import TicketCard from "../components/TicketCard";
 import {
   assignTicketToBay,
@@ -22,8 +23,7 @@ import {
   sortBays,
   waitingTickets,
 } from "../lib/board-logic";
-import { auth } from "../lib/firebase";
-import { useAuth } from "../lib/useAuth";
+import { useRole } from "../lib/RoleProvider";
 import { useCollection } from "../lib/useCollection";
 import AppNav from "../components/AppNav";
 import type { Bay, InventoryItem, Technician, Ticket } from "../types";
@@ -35,7 +35,7 @@ interface AssignTarget {
 
 export default function BoardPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isManager } = useRole();
 
   const tickets = useCollection<Ticket>("tickets");
   const bays = useCollection<Bay>("bays");
@@ -123,18 +123,11 @@ export default function BoardPage() {
           >
             + New ticket
           </button>
-          <span className="hidden text-sm text-zinc-400 sm:inline">
-            {user.email}
-          </span>
-          <button
-            type="button"
-            onClick={() => signOut(auth)}
-            className="text-sm text-zinc-400 hover:text-zinc-200"
-          >
-            Sign out
-          </button>
+          <HeaderUser />
         </div>
       </header>
+
+      <ReminderScanner tickets={tickets.data} enabled={isManager} />
 
       {(actionError || loadError) && (
         <p className="border-b border-red-900 bg-red-950 px-4 py-2 text-sm text-red-300">
@@ -155,34 +148,43 @@ export default function BoardPage() {
         </div>
       ) : orderedBays.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
-          <p className="max-w-sm text-zinc-400">
-            Empty shop. Load demo data to explore a busy Saturday, or start
-            from scratch.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              disabled={seeding}
-              onClick={() => {
-                setSeeding(true);
-                void run(seedDemoData).finally(() => setSeeding(false));
-              }}
-              className="rounded-md bg-amber-500 px-4 py-2 font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
-            >
-              {seeding ? "Loading…" : "Load demo data"}
-            </button>
-            <button
-              type="button"
-              disabled={seeding}
-              onClick={() => {
-                setSeeding(true);
-                void run(seedDefaults).finally(() => setSeeding(false));
-              }}
-              className="rounded-md border border-zinc-600 px-4 py-2 font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
-            >
-              Just 3 bays + 2 techs
-            </button>
-          </div>
+          {isManager ? (
+            <>
+              <p className="max-w-sm text-zinc-400">
+                Empty shop. Load demo data to explore a busy Saturday, or start
+                from scratch.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  disabled={seeding}
+                  onClick={() => {
+                    setSeeding(true);
+                    void run(seedDemoData).finally(() => setSeeding(false));
+                  }}
+                  className="rounded-md bg-amber-500 px-4 py-2 font-semibold text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
+                >
+                  {seeding ? "Loading…" : "Load demo data"}
+                </button>
+                <button
+                  type="button"
+                  disabled={seeding}
+                  onClick={() => {
+                    setSeeding(true);
+                    void run(seedDefaults).finally(() => setSeeding(false));
+                  }}
+                  className="rounded-md border border-zinc-600 px-4 py-2 font-medium text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+                >
+                  Just 3 bays + 2 techs
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="max-w-sm text-zinc-400">
+              The shop isn&apos;t set up yet. Ask a manager to add bays and
+              technicians.
+            </p>
+          )}
         </div>
       ) : (
         <div className="flex flex-1 items-start gap-4 overflow-x-auto p-4">

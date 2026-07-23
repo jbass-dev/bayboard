@@ -1,27 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { useRole } from "../lib/RoleProvider";
 
 export type NavKey =
   | "board"
   | "schedule"
   | "inventory"
   | "checklists"
-  | "summary";
+  | "summary"
+  | "admin";
 
-const LINKS: { key: NavKey; href: string; label: string }[] = [
-  { key: "board", href: "/", label: "Board" },
-  { key: "schedule", href: "/schedule", label: "Schedule" },
-  { key: "inventory", href: "/inventory", label: "Inventory" },
-  { key: "checklists", href: "/checklists", label: "Checklists" },
-  { key: "summary", href: "/summary", label: "Summary" },
-];
+/** `managerOnly` links are hidden from technicians. */
+const LINKS: { key: NavKey; href: string; label: string; managerOnly: boolean }[] =
+  [
+    { key: "board", href: "/", label: "Board", managerOnly: false },
+    { key: "checklists", href: "/checklists", label: "Checklists", managerOnly: false },
+    { key: "schedule", href: "/schedule", label: "Schedule", managerOnly: true },
+    { key: "inventory", href: "/inventory", label: "Inventory", managerOnly: true },
+    { key: "summary", href: "/summary", label: "Summary", managerOnly: true },
+    { key: "admin", href: "/admin", label: "Admin", managerOnly: true },
+  ];
 
-/** Primary navigation shared across every view. */
+/** Primary navigation shared across every view; filtered by role. */
 export default function AppNav({ current }: { current: NavKey }) {
+  const { isManager } = useRole();
+  const links = LINKS.filter((l) => isManager || !l.managerOnly);
+
   return (
-    <nav aria-label="Primary" className="flex items-center gap-1 text-sm">
-      {LINKS.map((l) =>
+    <nav aria-label="Primary" className="flex items-center gap-1 text-sm no-print">
+      {links.map((l) =>
         l.key === current ? (
           <span
             key={l.key}

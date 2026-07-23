@@ -1,14 +1,14 @@
 "use client";
 
-import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import AppNav from "../../components/AppNav";
+import HeaderUser from "../../components/HeaderUser";
+import ServiceRemindersPanel from "../../components/ServiceRemindersPanel";
 import ServicesChart from "../../components/ServicesChart";
-import { auth } from "../../lib/firebase";
 import { summarizeDay } from "../../lib/summary-logic";
 import { todayKey } from "../../lib/checklist-logic";
-import { useAuth } from "../../lib/useAuth";
+import { useRole } from "../../lib/RoleProvider";
 import { useCollection } from "../../lib/useCollection";
 import type { Bay, Ticket } from "../../types";
 
@@ -23,15 +23,17 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 export default function SummaryPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isManager } = useRole();
   const tickets = useCollection<Ticket>("tickets");
   const bays = useCollection<Bay>("bays");
 
   useEffect(() => {
-    if (!authLoading && !user) router.replace("/login");
-  }, [authLoading, user, router]);
+    if (authLoading) return;
+    if (!user) router.replace("/login");
+    else if (!isManager) router.replace("/"); // technicians: board only
+  }, [authLoading, user, isManager, router]);
 
-  if (authLoading || !user) {
+  if (authLoading || !user || !isManager) {
     return (
       <main className="flex min-h-screen items-center justify-center text-zinc-500">
         Loading…
@@ -46,7 +48,7 @@ export default function SummaryPage() {
 
   return (
     <main className="flex min-h-screen flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-900/80 px-4 py-3">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-900/80 px-4 py-3 no-print">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold tracking-tight text-zinc-100">
             Bay<span className="text-amber-500">Board</span>
@@ -54,20 +56,24 @@ export default function SummaryPage() {
           <AppNav current="summary" />
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden text-sm text-zinc-400 sm:inline">
-            {user.email}
-          </span>
           <button
             type="button"
-            onClick={() => signOut(auth)}
-            className="text-sm text-zinc-400 hover:text-zinc-200"
+            onClick={() => window.print()}
+            className="rounded-md border border-zinc-600 px-3 py-1.5 text-sm font-medium text-zinc-200 hover:bg-zinc-800 no-print"
           >
-            Sign out
+            Print report
           </button>
+          <HeaderUser />
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-3xl flex-1 p-4">
+      <div id="report" className="mx-auto w-full max-w-3xl flex-1 p-4">
+        {/* Report masthead — only rendered on the printed page. */}
+        <div className="print-only mb-4 border-b border-zinc-300 pb-2">
+          <h1 className="text-2xl font-bold">BayBoard — End-of-Day Report</h1>
+          <p className="text-sm">{today}</p>
+        </div>
+
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-semibold text-zinc-100">Today</h2>
           <span className="text-sm text-zinc-500">{today}</span>
@@ -122,6 +128,8 @@ export default function SummaryPage() {
             </section>
           </>
         )}
+
+        <ServiceRemindersPanel tickets={tickets.data} now={new Date()} />
       </div>
     </main>
   );
