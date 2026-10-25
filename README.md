@@ -39,11 +39,13 @@ Completing a ticket doesn't just flip its status — it writes the status change
 - **Tailwind CSS** — dense, glanceable board layout that stays responsive on the counter tablet and the bay screen.
 - **Firebase Auth + Firestore** — real-time sync out of the box; a generic typed converter keeps documents fully typed coming out of the database.
 - **Jest + React Testing Library** — pure logic and board/inventory flows tested on every push.
-- **GitHub Actions + Vercel** — lint and the full test suite run on every push; deployed on Vercel.
+- **Playwright** — end-to-end tests drive the real app in Chromium against the Firebase Emulator Suite.
+- **GitHub Actions + Vercel** — lint, the Jest suite, and the Playwright E2E suite run on every push; deployed on Vercel.
 
 ## Testing & accessibility
 
-- **81 tests** run in CI on every push: **63 unit tests** (status transitions, next-service dates, inventory decrement, low-stock detection, checklist toggling, day-summary rollups, and the full auto-scheduler — constraint checks, backtracking, max-fill, and unfilled-slot explanations) and **18 React Testing Library / component tests** (board cards, complete flow, inventory restock and low-stock banner, add-item form).
+- **89 Jest tests** run in CI on every push: unit tests for the pure logic (status transitions, next-service dates, inventory decrement, low-stock detection, checklist toggling, day-summary rollups, and the full auto-scheduler: constraint checks, backtracking, max-fill, and unfilled-slot explanations) plus React Testing Library component tests (board cards, complete flow, inventory restock and low-stock banner, add-item form).
+- **Playwright end-to-end tests** run the real app in Chromium against the Firebase Auth + Firestore emulators, so they never touch production data and CI needs no secrets. They cover the sign-in guard and guest login, a car's full trip from check-in to a bay to complete, the inventory decrement raising live low-stock alerts, and real-time sync: a ticket added in one browser appears in a second browser with no refresh.
 - **Keyboard operable** — every board action (assign, complete, return to waiting) is a real button; dialogs close on `Escape` and expose `role="dialog"` with a labelled title.
 - **Announced** — ticket moves and completions are announced through an ARIA live region; the low-stock banner uses `role="status"`.
 - **Not colour alone** — the elapsed-time badge carries a shape marker and a spoken label ("running long", "well over target") alongside its colour, and low inventory is labelled "Low stock" in text.
@@ -73,7 +75,9 @@ cp .env.local.example .env.local   # fill in your Firebase config
 npm run dev
 ```
 
-Run the test suite: `npm test` · lint: `npm run lint`
+Run the unit tests: `npm test` · end-to-end tests: `npm run test:e2e` · lint: `npm run lint`
+
+The E2E suite starts the Firebase emulators and a Next.js server on port 3100 by itself. It needs **Java 21+** for the emulators and a one-time `npx playwright install chromium`. Use `npm run test:e2e:ui` to watch the tests run step by step.
 
 To try it locally, sign in and click **Load demo data** on the empty board — it seeds bays, technicians, a stocked shelf (with one item deliberately low), and cars across every state.
 
